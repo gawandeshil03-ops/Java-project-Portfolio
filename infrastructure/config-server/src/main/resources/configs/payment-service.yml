@@ -1,0 +1,30 @@
+server:
+  port: 8085
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/paymentdb
+    username: payment
+    password: pass
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+# Iyzico — set IYZICO_API_KEY / IYZICO_SECRET_KEY env vars to enable real calls.
+# When unset (blank), the service silently falls back to its built-in mock so the
+# stack still boots end-to-end without a sandbox account.
+iyzico:
+  api-key: ${IYZICO_API_KEY:}
+  secret-key: ${IYZICO_SECRET_KEY:}
+  base-url: ${IYZICO_BASE_URL:https://sandbox-api.iyzipay.com}

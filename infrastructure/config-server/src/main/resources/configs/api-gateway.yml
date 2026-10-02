@@ -1,0 +1,105 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6380
+  cloud:
+    gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
+            redis-rate-limiter.requestedTokens: 1
+            key-resolver: "#{@ipKeyResolver}"
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service-public
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**
+        - id: user-service-protected
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+        # Marketplace V1+V4: seller-service expose'u product path'i altında
+        # (more specific routes MUST come before /api/products/** below)
+        - id: seller-service-product-listings
+          uri: lb://seller-service
+          predicates:
+            - Path=/api/products/*/listings
+        - id: seller-service-product-reviews
+          uri: lb://seller-service
+          predicates:
+            - Path=/api/products/*/reviews
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**
+        - id: cart-service
+          uri: lb://cart-service
+          predicates:
+            - Path=/api/cart/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+        - id: order-service-coupons
+          uri: lb://order-service
+          predicates:
+            - Path=/api/coupons/**
+        # Marketplace V3: seller-facing sub-order list lives in order-service
+        - id: order-service-seller-orders
+          uri: lb://order-service
+          predicates:
+            - Path=/api/seller-orders/**
+        # Marketplace V4: payout admin routes (order-service)
+        - id: order-service-admin-payouts
+          uri: lb://order-service
+          predicates:
+            - Path=/api/admin/payouts/**
+        # Marketplace V4: reviews routes (seller-service owns reviews + rating)
+        - id: seller-service-reviews
+          uri: lb://seller-service
+          predicates:
+            - Path=/api/reviews/**
+        - id: seller-service-seller-reviews
+          uri: lb://seller-service
+          predicates:
+            - Path=/api/sellers/*/reviews
+        - id: recommendation-service
+          uri: lb://recommendation-service
+          predicates:
+            - Path=/api/recommendations/**
+        - id: recommendation-mcp
+          uri: lb://recommendation-service
+          predicates:
+            - Path=/mcp/**
+        - id: catalog-stream-service
+          uri: lb://catalog-stream-service
+          predicates:
+            - Path=/api/catalog/**
+        # Marketplace V1: seller-service routes
+        - id: seller-service-sellers
+          uri: lb://seller-service
+          predicates:
+            - Path=/api/sellers/**
+        - id: seller-service-listings
+          uri: lb://seller-service
+          predicates:
+            - Path=/api/listings/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-256-bit-key-please-change-this-in-production-environment-now}
